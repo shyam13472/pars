@@ -19,11 +19,12 @@ class ST:
     date, token, file = range(3)
     CANCEL_INLINE_KEYBOARD = [[InlineKeyboardButton("ОТМЕНИТЬ ВСЕ", callback_data='chatcancel')]]
     START = [[InlineKeyboardButton("запуск", callback_data='start')]]
+    auth = [[InlineKeyboardButton("✘", callback_data='del')], [InlineKeyboardButton("✔", callback_data='send_log')]]
 
 
 class bot:
     def __init__(self):
-        self.bot = Updater('5116492940:AAES0YfQVbVOcaxUdwNSR5ZmZ1YYGIhuptM')
+        self.bot = Updater('1470615684:AAG1A6VVryqBgRdPnre4rCZLjl16BoVc6Jw')
         self.dispatcher = self.bot.dispatcher
         self.chat = ConversationHandler(
             entry_points=[CommandHandler('start', self.start)],
@@ -36,11 +37,18 @@ class bot:
         )
         self.dispatcher.add_handler(self.chat)
         self.dispatcher.add_handler(CommandHandler('clear', self.clear))
-        self.dispatcher.add_handler(CallbackQueryHandler(self.send ,pattern=r'^start$'))
+        self.dispatcher.add_handler(CallbackQueryHandler(self.send, pattern=r'^start$'))
+        self.dispatcher.add_handler(CallbackQueryHandler(self.send_log, pattern=r'^send_log$'))
+        self.dispatcher.add_handler(CallbackQueryHandler(self.deli, pattern=r'^del$'))
+        self.dispatcher.add_handler(CommandHandler('log', self.log))
 
     def start(self, update:Update, context:CallbackContext):
-        update.message.reply_text('введите дату в формате yyyy-MM-dd\nпример: 2022-01-31', reply_markup=InlineKeyboardMarkup(ST.CANCEL_INLINE_KEYBOARD, one_time_keyboard=False))
+        update.message.reply_text('введите дату в формате yyyy-MM-dd\nпример: 2022-01-31',
+                                  reply_markup=InlineKeyboardMarkup(ST.CANCEL_INLINE_KEYBOARD, one_time_keyboard=False))
         return ST.date
+
+    def deli(self, update:Update, context:CallbackContext):
+        update.callback_query.message.delete()
 
     def clear(self, update:Update, context:CallbackContext):
         filename_list = glob.glob('*.xlsx')
@@ -49,6 +57,10 @@ class bot:
         else:
             update.message.reply_text(f'успешно удаленны фаилы {filename_list}')
 
+    def send_log(self, update:Update, context:CallbackContext):
+        doc = open('error.log', 'rb')
+        update.callback_query.message.reply_document(doc)
+        doc.close()
 
     def date(self, update:Update, context:CallbackContext):
             if '.' in update.message.text:
@@ -59,7 +71,11 @@ class bot:
                 update.message.reply_text('теперь введите токен:', reply_markup=InlineKeyboardMarkup(ST.CANCEL_INLINE_KEYBOARD, one_time_keyboard=False))
                 ST.a = update.message.text
                 return ST.token
-    
+
+    def log(self, update:Update, context:CallbackContext):
+        update.message.reply_text('вам отправится фаил с ошибкой подтвердите:',
+                                  reply_markup=InlineKeyboardMarkup(ST.auth, one_time_keyboard=False))
+
     def token(self, update:Update, context:CallbackContext):
         update.message.reply_text('теперь exel фаил:', reply_markup=InlineKeyboardMarkup(ST.CANCEL_INLINE_KEYBOARD, one_time_keyboard=False))
         ST.b = update.message.text
