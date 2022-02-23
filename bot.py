@@ -106,13 +106,19 @@ class bot:
             return ST.token
 
     def file(self, update: Update, context: CallbackContext):
+        try:
+            os.remove(f'{update.message.chat_id}_{ST.a}.xlsx')
+            os.remove(f'{update.message.chat_id}.xlsx')
+        except:
+            pass
         f = context.bot.getFile(update.message.document.file_id)
-        f.download('./doc.xlsx')
+        f.download(f'./{update.message.chat_id}.xlsx')
         update.message.reply_text(f'date: {ST.a}\ntoken: {ST.b}\nфаил загружен',
                                   reply_markup=InlineKeyboardMarkup(ST.START, one_time_keyboard=False))
         return ConversationHandler.END
 
     def send(self, update: Update, context: CallbackContext):
+        x = update.callback_query.message.chat.id
         headers = {
             'X-Mpstats-TOKEN': ST.b,
             'Content-Type': 'application/json'
@@ -129,9 +135,9 @@ class bot:
         param_fbs = {
             'd': ST.a
         }
-        numbers = pd.read_excel('doc.xlsx', index_col='Номенклатура')
+        numbers = pd.read_excel(f'{x}.xlsx', index_col='Номенклатура')
         numbers.head()
-        workbook = xlsxwriter.Workbook(f'./nomenclatures_{ST.a}.xlsx')
+        workbook = xlsxwriter.Workbook(f'./{x}_{ST.a}.xlsx')
         worksheet = workbook.add_worksheet()
         # ширина колон
         worksheet.set_column(0, 0, 30)
@@ -283,15 +289,11 @@ class bot:
             sys.exit(1)
         workbook.close()
         # df.to_excel(f'./nomenclatures_{preDay.tm_year}_{preDay.tm_mon}_{preDay.tm_mday}.xlsx')
-        os.remove('doc.xlsx')
-        filename_list = glob.glob('*.xlsx')
-        for filename in filename_list:
-            doc = open(filename, 'rb')
+        os.remove(f'{x}.xlsx')
+        doc = open(f'{x}_{ST.a}.xlsx', 'rb')
         update.callback_query.message.reply_document(doc)
         doc.close()
-        for filename in filename_list:
-            print(filename)
-            os.remove(str(filename))
+        os.remove(f'{x}_{ST.a}.xlsx')
 
     def chat_cancel(self, update: Update, context: CallbackContext):
         update.callback_query.message.reply_text(
