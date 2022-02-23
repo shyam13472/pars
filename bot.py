@@ -8,8 +8,11 @@ import pandas as pd
 import glob
 from logging import info
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import Updater, CallbackContext, CommandHandler, MessageHandler, ConversationHandler, Filters, CallbackQueryHandler
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', filename='error.log')
+from telegram.ext import Updater, CallbackContext, CommandHandler, MessageHandler, ConversationHandler, Filters, \
+    CallbackQueryHandler
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    filename='error.log')
 info('Loading dependencies...')
 
 
@@ -24,16 +27,16 @@ class ST:
 
 class bot:
     def __init__(self):
-        self.bot = Updater('5116492940:AAES0YfQVbVOcaxUdwNSR5ZmZ1YYGIhuptM')
+        self.bot = Updater('1470615684:AAG1A6VVryqBgRdPnre4rCZLjl16BoVc6Jw')
         self.dispatcher = self.bot.dispatcher
         self.chat = ConversationHandler(
             entry_points=[CommandHandler('start', self.start)],
-                states={
-                    ST.date: [MessageHandler(Filters.all, self.date)],
-                    ST.token: [MessageHandler(Filters.all, self.token)],
-                    ST.file: [MessageHandler(Filters.all, self.file)]
-                },
-                fallbacks=[CallbackQueryHandler(self.chat_cancel, pattern=r'^chatcancel$')]
+            states={
+                ST.date: [MessageHandler(Filters.all, self.date)],
+                ST.token: [MessageHandler(Filters.all, self.token)],
+                ST.file: [MessageHandler(Filters.all, self.file)]
+            },
+            fallbacks=[CallbackQueryHandler(self.chat_cancel, pattern=r'^chatcancel$')]
         )
         self.dispatcher.add_handler(self.chat)
         self.dispatcher.add_handler(CommandHandler('clear', self.clear))
@@ -42,45 +45,65 @@ class bot:
         self.dispatcher.add_handler(CallbackQueryHandler(self.deli, pattern=r'^del$'))
         self.dispatcher.add_handler(CommandHandler('log', self.log))
 
-    def start(self, update:Update, context:CallbackContext):
+    def start(self, update: Update, context: CallbackContext):
         update.message.reply_text('введите дату в формате yyyy-MM-dd\nпример: 2022-01-31',
                                   reply_markup=InlineKeyboardMarkup(ST.CANCEL_INLINE_KEYBOARD, one_time_keyboard=False))
         return ST.date
 
-    def deli(self, update:Update, context:CallbackContext):
+    def deli(self, update: Update, context: CallbackContext):
         update.callback_query.message.delete()
 
-    def clear(self, update:Update, context:CallbackContext):
+    def clear(self, update: Update, context: CallbackContext):
         filename_list = glob.glob('*.xlsx')
         for filename in filename_list:
             os.remove(filename)
         else:
             update.message.reply_text(f'успешно удаленны фаилы {filename_list}')
 
-    def send_log(self, update:Update, context:CallbackContext):
+    def send_log(self, update: Update, context: CallbackContext):
         doc = open('error.log', 'rb')
         update.callback_query.message.reply_document(doc)
         doc.close()
 
-    def date(self, update:Update, context:CallbackContext):
-            if '.' in update.message.text:
-                text = update.message.text.split('.')
-                ST.a = '-'.join(text)
-            else:
-                ST.a = update.message.text
-                update.message.reply_text('теперь введите токен:', reply_markup=InlineKeyboardMarkup(ST.CANCEL_INLINE_KEYBOARD, one_time_keyboard=False))
-                ST.a = update.message.text
-                return ST.token
+    def date(self, update: Update, context: CallbackContext):
+        if '.' in update.message.text:
+            text = update.message.text.split('.')
+            ST.a = '-'.join(text)
+        else:
+            ST.a = update.message.text
+            update.message.reply_text('теперь введите токен:',
+                                      reply_markup=InlineKeyboardMarkup(ST.CANCEL_INLINE_KEYBOARD,
+                                                                        one_time_keyboard=False))
+            ST.a = update.message.text
+            return ST.token
 
     def log(self, update: Update, context: CallbackContext):
         update.message.reply_text('вам отправится фаил с ошибкой подтвердите:',
                                   reply_markup=InlineKeyboardMarkup(ST.auth, one_time_keyboard=False))
 
     def token(self, update: Update, context: CallbackContext):
-        update.message.reply_text('теперь exel фаил:', reply_markup=InlineKeyboardMarkup(ST.CANCEL_INLINE_KEYBOARD,
-                                                                                         one_time_keyboard=False))
+
         ST.b = update.message.text
-        return ST.file
+        s = requests.Session()
+        headers = {
+            'X-Mpstats-TOKEN': ST.b,
+            'Content-Type': 'application/json',
+        }
+
+        response = requests.get('http://mpstats.io/api/user/report_api_limit', headers=headers)
+        if response.status_code == 200:
+            a = response.json()['available'] - response.json()['use']
+            update.message.reply_text(f'токен валидный\nОсталось использований: {a}\nтеперь exel фаил:',
+                                      reply_markup=InlineKeyboardMarkup(ST.CANCEL_INLINE_KEYBOARD,
+                                                                        one_time_keyboard=False)
+                                      )
+            return ST.file
+        else:
+            update.message.reply_text(f'что то не так с кодом\nпопробуйте еще раз',
+                                      reply_markup=InlineKeyboardMarkup(ST.CANCEL_INLINE_KEYBOARD,
+                                                                        one_time_keyboard=False)
+                                      )
+            return ST.token
 
     def file(self, update: Update, context: CallbackContext):
         f = context.bot.getFile(update.message.document.file_id)
@@ -98,12 +121,12 @@ class bot:
             'd1': ST.a,
             'd2': ST.a
         }
-        param_f = {                       
+        param_f = {
             'd1': ST.a,
             'd2': ST.a,
             'full': 'true'
         }
-        param_fbs = {                       
+        param_fbs = {
             'd': ST.a
         }
         numbers = pd.read_excel('doc.xlsx', index_col='Номенклатура')
@@ -185,7 +208,7 @@ class bot:
                 if resSales.status_code == 200 and resCategory.status_code == 200 and resKeyWords.status_code == 200 \
                         and resSalesfbs.status_code == 200:
                     countSale = jsonRS[0]['sales']  # количество продаж
-                    balance = jsonRS[0]['balance']   # остаток
+                    balance = jsonRS[0]['balance']  # остаток
                     price = jsonRS[0]['final_price']  # цена товара
                     countCategorie = len(jsonRC['categories'])  # кол-во категорий
                     countKeyWords = len(jsonKeys['words'])  # кол-во ключ. слов
@@ -194,33 +217,33 @@ class bot:
                     for j in jsonKeys['words']:
                         avgPos += jsonKeys['words'][j]['avgPos']
                         outputKeyWords += jsonKeys['words'][j]['total']
-                    if avgPos:                
+                    if avgPos:
                         avgPos = avgPos // countKeyWords
                     countSalefbs = 0  # кол-во продаж fbs
                     for k in range(len(jsonRSfbs)):
                         countSalefbs += (jsonRSfbs[k]['sales'] + jsonRSfbs[k]['salesfbs'])
                     # writer.writerow([str(i), countSale, price, str(countCategorie), str(outputCategSum), balance])
                     worksheet.write(row, col, str(int(i)))
-                    worksheet.write(row, col+1, price)
-                    worksheet.write(row, col+2, str(countCategorie))
+                    worksheet.write(row, col + 1, price)
+                    worksheet.write(row, col + 2, str(countCategorie))
                     # worksheet.write(row, col+4, str(outputCategSum))
-                    worksheet.write(row, col+3, balance)
-                    worksheet.write(row, col+4, countKeyWords)
-                    worksheet.write(row, col+5, avgPos)
-                    worksheet.write(row, col+6, outputKeyWords)
-                    worksheet.write(row, col+7, countSale)
-                    worksheet.write(row, col+8, countSalefbs)
+                    worksheet.write(row, col + 3, balance)
+                    worksheet.write(row, col + 4, countKeyWords)
+                    worksheet.write(row, col + 5, avgPos)
+                    worksheet.write(row, col + 6, outputKeyWords)
+                    worksheet.write(row, col + 7, countSale)
+                    worksheet.write(row, col + 8, countSalefbs)
 
                     row += 1
 
-                elif resSales.status_code == 429 or resCategory.status_code == 429 or resKeyWords.status_code == 429\
+                elif resSales.status_code == 429 or resCategory.status_code == 429 or resKeyWords.status_code == 429 \
                         or resSalesfbs.status_code == 429:
                     logging.error(f"{time.localtime().tm_mday}/{time.localtime().tm_mon}/{time.localtime().tm_year}"
                                   f" {time.localtime().tm_hour}:{time.localtime().tm_min}:{time.localtime().tm_sec}"
                                   f" - Error: Code 429; {jsonRS['message']}; debug: Ошибка на номенклатуре: {int(i)}")
                     # workbook.close()
                     continue
-                elif resSales.status_code == 401 or resCategory.status_code == 401 or resKeyWords.status_code == 401 or\
+                elif resSales.status_code == 401 or resCategory.status_code == 401 or resKeyWords.status_code == 401 or \
                         resSalesfbs.status_code == 401:
                     logging.error(f"{time.localtime().tm_mday}/{time.localtime().tm_mon}/{time.localtime().tm_year}"
                                   f" {time.localtime().tm_hour}:{time.localtime().tm_min}:{time.localtime().tm_sec}"
@@ -228,7 +251,7 @@ class bot:
                                   f" Ошибка на номенклатуре: {int(i)}")
                     # workbook.close()
                     continue
-                elif resSales.status_code == 500 or resCategory.status_code == 500 or resKeyWords.status_code == 500\
+                elif resSales.status_code == 500 or resCategory.status_code == 500 or resKeyWords.status_code == 500 \
                         or resSalesfbs.status_code == 500:
                     logging.error(f"{time.localtime().tm_mday}/{time.localtime().tm_mon}/{time.localtime().tm_year}"
                                   f" {time.localtime().tm_hour}:{time.localtime().tm_min}:{time.localtime().tm_sec}"
@@ -236,7 +259,7 @@ class bot:
                                   f" Ошибка на номенклатуре: {int(i)}")
                     # workbook.close()
                     continue
-                elif resSales.status_code == 202 or resCategory.status_code == 202 or resKeyWords.status_code == 202\
+                elif resSales.status_code == 202 or resCategory.status_code == 202 or resKeyWords.status_code == 202 \
                         or resSalesfbs.status_code == 202:
                     logging.error(f"{time.localtime().tm_mday}/{time.localtime().tm_mon}/{time.localtime().tm_year}"
                                   f" {time.localtime().tm_hour}:{time.localtime().tm_min}:{time.localtime().tm_sec}"
@@ -276,7 +299,7 @@ class bot:
         )
         return ConversationHandler.END
 
-    def run(self):    
+    def run(self):
         logging.info('Starting bot...')
         self.bot.start_polling()
         self.bot.idle()
