@@ -27,7 +27,7 @@ class ST:
 
 class bot:
     def __init__(self):
-        self.bot = Updater('1470615684:AAG1A6VVryqBgRdPnre4rCZLjl16BoVc6Jw')
+        self.bot = Updater('5116492940:AAES0YfQVbVOcaxUdwNSR5ZmZ1YYGIhuptM')
         self.dispatcher = self.bot.dispatcher
         self.chat = ConversationHandler(
             entry_points=[CommandHandler('start', self.start)],
