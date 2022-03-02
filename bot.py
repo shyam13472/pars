@@ -10,7 +10,6 @@ from logging import info
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Updater, CallbackContext, CommandHandler, MessageHandler, ConversationHandler, Filters, \
     CallbackQueryHandler
-import _thread
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     filename='error.log')
@@ -28,7 +27,7 @@ class ST:
 
 class bot:
     def __init__(self):
-        self.bot = Updater('1470615684:AAG1A6VVryqBgRdPnre4rCZLjl16BoVc6Jw')
+        self.bot = Updater('5116492940:AAES0YfQVbVOcaxUdwNSR5ZmZ1YYGIhuptM')
         self.dispatcher = self.bot.dispatcher
         self.chat = ConversationHandler(
             entry_points=[CommandHandler('start', self.start)],
