@@ -10,6 +10,7 @@ from logging import info
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Updater, CallbackContext, CommandHandler, MessageHandler, ConversationHandler, Filters, \
     CallbackQueryHandler
+import _thread
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     filename='error.log')
@@ -27,7 +28,7 @@ class ST:
 
 class bot:
     def __init__(self):
-        self.bot = Updater('5116492940:AAES0YfQVbVOcaxUdwNSR5ZmZ1YYGIhuptM')
+        self.bot = Updater('1470615684:AAG1A6VVryqBgRdPnre4rCZLjl16BoVc6Jw')
         self.dispatcher = self.bot.dispatcher
         self.chat = ConversationHandler(
             entry_points=[CommandHandler('start', self.start)],
@@ -164,7 +165,10 @@ class bot:
         col = 0
         s = requests.Session()
         try:
+            count = 1
             for i in numbers.index:
+                update.callback_query.message.edit_text(f'выполненно: {count} из {len(numbers.index)}')
+                count += 1
                 resSales = s.get(f'https://mpstats.io/api/wb/get/item/{int(i)}/sales', headers=headers, params=param)
                 resSales.raise_for_status()
                 if resSales.status_code != 204:
@@ -291,6 +295,7 @@ class bot:
         # df.to_excel(f'./nomenclatures_{preDay.tm_year}_{preDay.tm_mon}_{preDay.tm_mday}.xlsx')
         os.remove(f'{x}.xlsx')
         doc = open(f'{x}_{ST.a}.xlsx', 'rb')
+        update.callback_query.message.delete()
         update.callback_query.message.reply_document(doc)
         doc.close()
         os.remove(f'{x}_{ST.a}.xlsx')
