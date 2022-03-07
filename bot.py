@@ -252,8 +252,8 @@ class bot:
                         for m in remains.json()[ST.a]:
                             st = f"{m}:(s:{remains.json()[ST.a][m]['sales']})/" \
                                 f"(b:{remains.json()[ST.a][m]['balance']})"
-                            worksheet.set_column(row, stolb, 30)
-                            worksheet.write(0, stolb, st)
+                            worksheet.set_column(0, stolb, 30)
+                            worksheet.write(row, stolb, st)
                             stolb += 1
                     except:
                         pass
