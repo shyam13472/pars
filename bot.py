@@ -3,6 +3,7 @@ import requests
 import time
 import sys
 import xlsxwriter
+import threading
 import os
 import pandas as pd
 import glob
@@ -19,6 +20,8 @@ info('Loading dependencies...')
 class ST:
     a = str()
     b = str()
+    count = 1
+    all = 0
     date, token, file = range(3)
     CANCEL_INLINE_KEYBOARD = [[InlineKeyboardButton("ОТМЕНИТЬ ВСЕ", callback_data='chatcancel')]]
     START = [[InlineKeyboardButton("запуск", callback_data='start')]]
@@ -160,13 +163,14 @@ class bot:
         worksheet.write(0, 6, 'Сумма частотности')
         worksheet.write(0, 7, 'Кол-во продаж')
         worksheet.write(0, 8, 'Кол-во продаж(fbs)')
+        worksheet.write(0, 9, 'размер остаток(b) и сколько проданно(s)')
         row = 1
         col = 0
         s = requests.Session()
         try:
-            count = 1
+            count = 0
             for i in numbers.index:
-                update.callback_query.message.edit_text(f'выполненно: {count} из {len(numbers.index)}')
+                update.callback_query.message.edit_text(f'выполненно {count} из {len(numbers.index)}')
                 count += 1
                 resSales = s.get(f'https://mpstats.io/api/wb/get/item/{int(i)}/sales', headers=headers, params=param)
                 resSales.raise_for_status()
@@ -202,7 +206,7 @@ class bot:
                     continue
 
                 resKeyWords = s.get(f'https://mpstats.io/api/wb/get/item/{int(i)}/by_keywords', headers=headers,
-                                    params=param_f)
+                                    params=param)
                 resKeyWords.raise_for_status()
 
                 if resKeyWords.status_code != 204:
@@ -213,7 +217,8 @@ class bot:
                                   f"Error: Code 204; Нет содержимого в ответе (запрос resKeyWords) debug:"
                                   f" Ошибка на номенклатуре: {int(i)}")
                     continue
-
+                remains = s.post(f'http://mpstats.io/api/wb/get/item/{int(i)}/orders_by_size', headers=headers,
+                                 params=param_f)
                 if resSales.status_code == 200 and resCategory.status_code == 200 and resKeyWords.status_code == 200 \
                         and resSalesfbs.status_code == 200:
                     countSale = jsonRS[0]['sales']  # количество продаж
@@ -242,7 +247,16 @@ class bot:
                     worksheet.write(row, col + 6, outputKeyWords)
                     worksheet.write(row, col + 7, countSale)
                     worksheet.write(row, col + 8, countSalefbs)
-
+                    stolb = 9
+                    try:
+                        for m in remains.json()[ST.a]:
+                            st = f"{m}:(s:{remains.json()[ST.a][m]['sales']})/" \
+                                f"(b:{remains.json()[ST.a][m]['balance']})"
+                            worksheet.set_column(row, stolb, 30)
+                            worksheet.write(0, stolb, st)
+                            stolb += 1
+                    except:
+                        pass
                     row += 1
 
                 elif resSales.status_code == 429 or resCategory.status_code == 429 or resKeyWords.status_code == 429 \
@@ -252,8 +266,8 @@ class bot:
                                   f" - Error: Code 429; {jsonRS['message']}; debug: Ошибка на номенклатуре: {int(i)}")
                     # workbook.close()
                     continue
-                elif resSales.status_code == 401 or resCategory.status_code == 401 or resKeyWords.status_code == 401 or \
-                        resSalesfbs.status_code == 401:
+                elif resSales.status_code == 401 or resCategory.status_code == 401 or resKeyWords.status_code == 401 \
+                        or resSalesfbs.status_code == 401:
                     logging.error(f"{time.localtime().tm_mday}/{time.localtime().tm_mon}/{time.localtime().tm_year}"
                                   f" {time.localtime().tm_hour}:{time.localtime().tm_min}:{time.localtime().tm_sec}"
                                   f" - Error: Code 401; {jsonRS['message']}; Не правильный токен!; debug:"
