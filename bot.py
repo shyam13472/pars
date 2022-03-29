@@ -85,7 +85,6 @@ class bot:
                                   reply_markup=InlineKeyboardMarkup(ST.auth, one_time_keyboard=False))
 
     def token(self, update: Update, context: CallbackContext):
-
         ST.b = update.message.text
         s = requests.Session()
         headers = {
@@ -100,6 +99,7 @@ class bot:
                                       reply_markup=InlineKeyboardMarkup(ST.CANCEL_INLINE_KEYBOARD,
                                                                         one_time_keyboard=False)
                                       )
+            info(f'токен:\n{ST.b}\nОсталось использований: {a}')
             return ST.file
         else:
             update.message.reply_text(f'что то не так с кодом\nпопробуйте еще раз',
