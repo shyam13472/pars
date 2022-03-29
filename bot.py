@@ -122,6 +122,7 @@ class bot:
 
     def send(self, update: Update, context: CallbackContext):
         x = update.callback_query.message.chat.id
+        info(f'использован токен: {ST.b}')
         headers = {
             'X-Mpstats-TOKEN': ST.b,
             'Content-Type': 'application/json'
@@ -153,6 +154,8 @@ class bot:
         worksheet.set_column(0, 6, 30)
         worksheet.set_column(0, 7, 30)
         worksheet.set_column(0, 8, 30)
+        worksheet.set_column(0, 9, 30)
+        worksheet.set_column(0, 10, 30)
         worksheet.write(0, 0, 'Номенклатура')
         worksheet.write(0, 1, 'Цена товара')
         worksheet.write(0, 2, 'Кол-во категорий')
@@ -163,7 +166,8 @@ class bot:
         worksheet.write(0, 6, 'Сумма частотности')
         worksheet.write(0, 7, 'Кол-во продаж')
         worksheet.write(0, 8, 'Кол-во продаж(fbs)')
-        worksheet.write(0, 9, 'размер остаток(b) и сколько проданно(s)')
+        worksheet.write(0, 9, 'размеры')
+        worksheet.write(0, 10, 'итого по складам')
         row = 1
         col = 0
         s = requests.Session()
@@ -248,15 +252,20 @@ class bot:
                     worksheet.write(row, col + 7, countSale)
                     worksheet.write(row, col + 8, countSalefbs)
                     stolb = 9
+
+
+                    countbalance = 0
                     try:
+                        minsize = remains.json()[ST.a][0]
+                        maxsize = remains.json()[ST.a][-1]
+                        print(minsize, maxsize)
                         for m in remains.json()[ST.a]:
-                            st = f"{m}:(s:{remains.json()[ST.a][m]['sales']})/" \
-                                f"(b:{remains.json()[ST.a][m]['balance']})"
-                            worksheet.set_column(0, stolb, 30)
-                            worksheet.write(row, stolb, st)
-                            stolb += 1
+                            countbalance += int(remains.json()[ST.a][m]['balance'])
+                        worksheet.write(row, col + 9, f'{minsize}-{maxsize}')
+                        worksheet.write(row, col + 10, countbalance)
                     except:
                         pass
+
                     row += 1
 
                 elif resSales.status_code == 429 or resCategory.status_code == 429 or resKeyWords.status_code == 429 \
